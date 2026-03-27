@@ -27,8 +27,16 @@ function formatNumber(num) {
 }
 
 // Helper function to get Roblox avatar headshot URL
-function getRobloxHeadshotUrl(userId) {
-  return `https://www.roblox.com/headshot-thumbnail/image?userId=${userId}&width=420&height=420&format=png`;
+async function getRobloxHeadshotUrl(userId) {
+  try {
+    const response = await axios.get(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=420x420&format=Png&isCircular=false`);
+    if (response.data && response.data.data && response.data.data.length > 0) {
+      return response.data.data[0].imageUrl;
+    }
+  } catch (error) {
+    console.warn(`Failed to fetch avatar URL for user ${userId}:`, error.message);
+  }
+  return null;
 }
 
 // Helper function to fetch Roblox username from userId
@@ -105,13 +113,19 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   let donorAvatar, recipientAvatar;
   
   try {
-    donorAvatar = await loadImage(getRobloxHeadshotUrl(donorUserId));
+    const donorAvatarUrl = await getRobloxHeadshotUrl(donorUserId);
+    if (donorAvatarUrl) {
+      donorAvatar = await loadImage(donorAvatarUrl);
+    }
   } catch (error) {
     console.warn('Failed to load donor avatar, using placeholder');
   }
   
   try {
-    recipientAvatar = await loadImage(getRobloxHeadshotUrl(recipientUserId));
+    const recipientAvatarUrl = await getRobloxHeadshotUrl(recipientUserId);
+    if (recipientAvatarUrl) {
+      recipientAvatar = await loadImage(recipientAvatarUrl);
+    }
   } catch (error) {
     console.warn('Failed to load recipient avatar, using placeholder');
   }
