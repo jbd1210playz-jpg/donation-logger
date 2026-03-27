@@ -1,8 +1,16 @@
 const express = require('express');
 const axios = require('axios');
-const { createCanvas, loadImage } = require('canvas');
+const { createCanvas, loadImage, registerFont } = require('canvas');
 const FormData = require('form-data');
 require('dotenv').config();
+
+// Register a proper font that supports all characters
+try {
+  registerFont('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', { family: 'DejaVu Sans', weight: 'bold' });
+  registerFont('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', { family: 'DejaVu Sans' });
+} catch (error) {
+  console.warn('Could not register fonts, using defaults');
+}
 
 const app = express();
 app.use(express.json());
@@ -188,13 +196,13 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   
   // Draw Robux icon
   ctx.fillStyle = '#ff00ff';
-  ctx.font = 'bold 80px Arial';
+  ctx.font = 'bold 80px "DejaVu Sans"';
   ctx.textAlign = 'center';
   ctx.fillText('◈', 700, 90);
   
   // Draw amount with stroke effect
   const formattedAmount = formatNumber(amount);
-  ctx.font = 'bold 100px Arial';
+  ctx.font = 'bold 100px "DejaVu Sans"';
   ctx.textAlign = 'center';
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 10;
@@ -203,7 +211,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   ctx.fillText(formattedAmount, 700, 140);
   
   // Draw "donated to" text
-  ctx.font = 'bold 60px Arial';
+  ctx.font = 'bold 60px "DejaVu Sans"';
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 6;
   ctx.strokeText('donated to', 700, 210);
@@ -211,7 +219,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   ctx.fillText('donated to', 700, 210);
   
   // Draw donor name with @ prefix
-  ctx.font = 'bold 36px Arial';
+  ctx.font = 'bold 36px "DejaVu Sans"';
   ctx.textAlign = 'center';
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 5;
@@ -237,7 +245,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.fill();
     
     // Draw message text
-    ctx.font = '24px Arial';
+    ctx.font = '24px "DejaVu Sans"';
     ctx.textAlign = 'left';
     ctx.fillStyle = '#fff';
     
@@ -252,7 +260,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   
   // Draw "Donated on •" text at the very bottom
   const dateText = `Donated on • ${formatDate()}`;
-  ctx.font = '20px Arial';
+  ctx.font = '20px "DejaVu Sans"';
   ctx.textAlign = 'center';
   ctx.fillStyle = '#888';
   ctx.fillText(dateText, width / 2, height - 20);
