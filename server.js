@@ -118,16 +118,18 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Transparent background with pink gradient fade starting at username level (y=310)
+  // Transparent background with fade starting at bottom, fully transparent at usernames
   ctx.clearRect(0, 0, width, height);
   
-  // Create gradient fade - solid pink until usernames, then fade to transparent
+  // Create gradient fade - solid pink at bottom (400), fade up, fully transparent at username level (310)
+  const usernameY = 310;
   const gradient = ctx.createLinearGradient(0, height, 0, 0);
-  gradient.addColorStop(0, '#ff69b4');                     // Solid hot pink at bottom
-  gradient.addColorStop(0.225, '#ff69b4');                 // Solid until username level (310/400 = 0.775, so 1-0.775 = 0.225)
-  gradient.addColorStop(0.5, 'rgba(255, 182, 217, 0.6)');  // Start fading
-  gradient.addColorStop(0.8, 'rgba(255, 192, 203, 0.3)');  // More transparent
-  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');      // Fully transparent at top
+  gradient.addColorStop(0, '#ff69b4');                     // Solid hot pink at bottom (y=400)
+  gradient.addColorStop(0.2, '#ff8dc4');                   // Start fading
+  gradient.addColorStop(0.4, 'rgba(255, 182, 217, 0.7)');  // More transparent
+  gradient.addColorStop(0.6, 'rgba(255, 192, 203, 0.3)');  // Very transparent
+  gradient.addColorStop((height - usernameY) / height, 'rgba(255, 192, 203, 0)'); // Fully transparent at username level (y=310)
+  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');      // Stay transparent to top
   
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
