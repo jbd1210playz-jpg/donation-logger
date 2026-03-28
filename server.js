@@ -269,10 +269,10 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
-  // Draw custom Discord emoji next to the amount
+  // Draw custom Discord emoji next to the amount (to the left)
   const emojiSize = 90;
   const amountX = 700;
-  const emojiX = amountX - 230; // Position emoji to the left of amount
+  const emojiX = amountX - 180; // Position emoji closer to the left of amount
   const iconY = 120;
   
   if (customEmoji) {
@@ -284,7 +284,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   
   // Draw amount with tier color and black outline - CENTERED
   const formattedAmount = formatNumber(amt);
-  drawText(formattedAmount, amountX, 120, 100, tierConfig.color, 'center', 10);
+  drawText(formattedAmount, amountX + 80, 120, 100, tierConfig.color, 'center', 10);
   
   // Draw "donated to" text (white with black outline)
   drawText('donated to', 700, 230, 60, '#FFFFFF', 'center', 8);
