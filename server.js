@@ -118,17 +118,14 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Transparent background with fade starting at bottom (no solid color)
+  // Transparent background with fade only at the bottom
   ctx.clearRect(0, 0, width, height);
   
-  // Create gradient fade - fade from bottom, fully transparent at username level
-  const usernameY = 310;
-  const gradient = ctx.createLinearGradient(0, height, 0, 0);
-  gradient.addColorStop(0, 'rgba(255, 107, 180, 0.8)');     // Semi-transparent pink at bottom (not solid)
-  gradient.addColorStop(0.3, 'rgba(255, 141, 196, 0.5)');   // Lighter fade
-  gradient.addColorStop(0.6, 'rgba(255, 182, 217, 0.2)');   // More transparent
-  gradient.addColorStop((height - usernameY) / height, 'rgba(255, 192, 203, 0)'); // Fully transparent at username level
-  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');       // Stay transparent to top
+  // Create gradient fade - only at bottom, rest is transparent
+  const gradient = ctx.createLinearGradient(0, height, 0, height * 0.4);
+  gradient.addColorStop(0, 'rgba(255, 107, 180, 0.8)');     // Semi-transparent pink at bottom
+  gradient.addColorStop(0.5, 'rgba(255, 141, 196, 0.4)');   // Fade
+  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');       // Transparent (stops at 40% height)
   
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
@@ -341,16 +338,16 @@ app.post('/api/donation', async (req, res) => {
       contentType: 'image/png'
     });
 
-    // Add embed instead of simple content
+    // Add embed with image only
     const embed = {
       color: 0xff00ff, // Pink color
-      description: `💰 **'${donorUsername}'** donated **${formatNumber(amount)} Robux** to **'${recipientUsername}'**!`,
       image: {
         url: 'attachment://donation.png'
       }
     };
 
     const payload = {
+      content: `💰 **'${donorUsername}'** donated **${formatNumber(amount)} Robux** to **'${recipientUsername}'**!`,
       embeds: [embed]
     };
     
