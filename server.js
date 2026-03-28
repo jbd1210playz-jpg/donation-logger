@@ -198,12 +198,21 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     console.warn('Failed to load recipient avatar');
   }
   
-  // Load custom Discord emoji
+  // Load custom Discord emoji (try PNG format)
   try {
-    const emojiUrl = 'https://cdn.discordapp.com/emojis/1487124460308922419.webp?size=96';
+    const emojiUrl = 'https://cdn.discordapp.com/emojis/1487124460308922419.png?size=96';
     customEmoji = await loadImage(emojiUrl);
+    console.log('✅ Robux emoji loaded successfully');
   } catch (error) {
-    console.warn('Failed to load custom emoji');
+    console.warn('Failed to load custom emoji:', error.message);
+    // Try webp as fallback
+    try {
+      const emojiUrlWebp = 'https://cdn.discordapp.com/emojis/1487124460308922419.webp?size=96';
+      customEmoji = await loadImage(emojiUrlWebp);
+      console.log('✅ Robux emoji loaded (webp fallback)');
+    } catch (error2) {
+      console.error('Failed to load emoji in both formats:', error2.message);
+    }
   }
   
   // Avatar settings - larger avatars
@@ -266,6 +275,9 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   
   if (customEmoji) {
     ctx.drawImage(customEmoji, emojiX, iconY - emojiSize / 2, emojiSize, emojiSize);
+    console.log(`✅ Drew Robux emoji at position (${emojiX}, ${iconY - emojiSize / 2})`);
+  } else {
+    console.warn('⚠️ Custom emoji not loaded, skipping emoji draw');
   }
   
   // Draw amount with tier color and black outline - CENTERED
