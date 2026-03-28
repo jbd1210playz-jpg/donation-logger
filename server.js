@@ -111,49 +111,39 @@ function wrapText(ctx, text, maxWidth) {
 
 // Generate donation image
 async function generateDonationImage(donorName, donorUserId, recipientName, recipientUserId, amount, message) {
-  // Determine tier based on amount
-  const tier = amount >= 10000000 ? 'legendary' : amount >= 1000000 ? 'epic' : 'common';
-  
-  // Tier-specific colors
-  const colors = {
-    common: {
-      bgStart: '#e8d4f2',
-      bgEnd: '#f5e6ff',
-      border: '#ff00ff',
-      amountFill: '#ff00ff',
-      amountStroke: '#000'
-    },
-    epic: {
-      bgStart: '#ffd6e8',
-      bgEnd: '#ffe6f0',
-      border: '#ff1493',
-      amountFill: '#ff1493',
-      amountStroke: '#000'
-    },
-    legendary: {
-      bgStart: '#ffcccc',
-      bgEnd: '#ffe6e6',
-      border: '#ff0000',
-      amountFill: '#ff0000',
-      amountStroke: '#000'
-    }
-  };
-  
-  const theme = colors[tier];
-  
-  // Canvas dimensions
-  const width = 1600;
-  const height = 400;
+  // Canvas dimensions - compact layout
+  const width = 1400;
+  const height = 200;
   
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Background - light gradient
-  const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, theme.bgStart);
-  gradient.addColorStop(1, theme.bgEnd);
+  // Red/pink gradient background from left to right
+  const gradient = ctx.createLinearGradient(0, 0, width, 0);
+  gradient.addColorStop(0, '#ff6b6b');      // Red-pink on left
+  gradient.addColorStop(0.5, '#ffb3ba');    // Light pink in middle
+  gradient.addColorStop(1, '#ff6b6b');      // Red-pink on right
+  
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
+  
+  // Helper function for text with white fill and black outline
+  const drawText = (text, x, y, size, align = 'center') => {
+    ctx.font = `bold ${size}px Arial`;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    
+    // Black outline
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    ctx.strokeText(text, x, y);
+    
+    // White fill
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(text, x, y);
+  };
   
   // Load avatar images
   let donorAvatar, recipientAvatar;
@@ -176,95 +166,99 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     console.warn('Failed to load recipient avatar');
   }
   
-  // Draw donor avatar (left side)
-  const avatarSize = 180;
-  const avatarY = 100;
+  // Avatar settings
+  const avatarSize = 60;
+  const avatarY = 70;
+  const leftAvatarX = 80;
+  const rightAvatarX = 1320;
   
+  // Draw donor avatar (left side)
   if (donorAvatar) {
     ctx.save();
     ctx.beginPath();
-    ctx.arc(300, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.arc(leftAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(donorAvatar, 300 - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
+    ctx.drawImage(donorAvatar, leftAvatarX - avatarSize, avatarY - avatarSize, avatarSize * 2, avatarSize * 2);
     ctx.restore();
   } else {
-    ctx.fillStyle = '#ccc';
+    ctx.fillStyle = '#555';
     ctx.beginPath();
-    ctx.arc(300, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.arc(leftAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
     ctx.fill();
   }
   
-  // Donor avatar border
-  ctx.strokeStyle = theme.border;
-  ctx.lineWidth = 12;
+  // Red border for donor avatar
+  ctx.strokeStyle = '#cc0000';
+  ctx.lineWidth = 8;
   ctx.beginPath();
-  ctx.arc(300, avatarY, avatarSize / 2, 0, Math.PI * 2);
+  ctx.arc(leftAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
   // Draw recipient avatar (right side)
   if (recipientAvatar) {
     ctx.save();
     ctx.beginPath();
-    ctx.arc(1300, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(recipientAvatar, 1300 - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
+    ctx.drawImage(recipientAvatar, rightAvatarX - avatarSize, avatarY - avatarSize, avatarSize * 2, avatarSize * 2);
     ctx.restore();
   } else {
-    ctx.fillStyle = '#ccc';
+    ctx.fillStyle = '#555';
     ctx.beginPath();
-    ctx.arc(1300, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
     ctx.fill();
   }
   
-  // Recipient avatar border
-  ctx.strokeStyle = theme.border;
-  ctx.lineWidth = 12;
+  // Red border for recipient avatar
+  ctx.strokeStyle = '#cc0000';
+  ctx.lineWidth = 8;
   ctx.beginPath();
-  ctx.arc(1300, avatarY, avatarSize / 2, 0, Math.PI * 2);
+  ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
-  // Draw Robux icon and amount
-  ctx.font = 'bold 90px Arial';
+  // Draw Robux icon (circle with R)
+  const iconX = 200;
+  const iconY = 50;
+  const iconRadius = 25;
+  
+  // Red circle
+  ctx.fillStyle = '#cc0000';
+  ctx.beginPath();
+  ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // White R
+  ctx.font = 'bold 30px Arial';
   ctx.textAlign = 'center';
-  ctx.fillStyle = theme.amountStroke;
-  ctx.fillText('◈', 800, 120);
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('R', iconX, iconY);
   
+  // Draw amount next to icon
   const formattedAmount = formatNumber(amount);
-  ctx.font = 'bold 110px Arial';
+  ctx.font = 'bold 50px Arial';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
   
-  // Amount with thick black stroke
-  ctx.strokeStyle = theme.amountStroke;
-  ctx.lineWidth = 18;
-  ctx.strokeText(formattedAmount, 800, 120);
+  // Black outline
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 5;
+  ctx.strokeText(formattedAmount, 240, 50);
   
-  // Amount fill
-  ctx.fillStyle = theme.amountFill;
-  ctx.fillText(formattedAmount, 800, 120);
+  // White fill
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(formattedAmount, 240, 50);
   
   // Draw "donated to" text
-  ctx.font = 'bold 70px Arial';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 14;
-  ctx.strokeText('donated to', 800, 210);
-  ctx.fillStyle = '#000';
-  ctx.fillText('donated to', 800, 210);
+  drawText('donated to', 700, 100, 40, 'center');
   
-  // Draw donor username
-  ctx.font = 'bold 50px Arial';
-  ctx.textAlign = 'center';
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 8;
-  ctx.strokeText(`@${donorName}`, 300, 310);
-  ctx.fillStyle = '#000';
-  ctx.fillText(`@${donorName}`, 300, 310);
+  // Draw donor name below left avatar
+  drawText(`@${donorName}`, leftAvatarX, 160, 20, 'center');
   
-  // Draw recipient username
-  ctx.strokeStyle = '#fff';
-  ctx.strokeText(`@${recipientName}`, 1300, 310);
-  ctx.fillStyle = '#000';
-  ctx.fillText(`@${recipientName}`, 1300, 310);
+  // Draw recipient name below right avatar
+  drawText(`@${recipientName}`, rightAvatarX, 160, 20, 'center');
   
   return canvas.toBuffer('image/png');
 }
