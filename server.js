@@ -118,15 +118,15 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Transparent background with pink gradient fade from bottom to top
+  // Transparent background with pink gradient fade starting at username level (y=310)
   ctx.clearRect(0, 0, width, height);
   
-  // Create gradient fade from bottom (pink) to top (transparent)
+  // Create gradient fade - solid pink until usernames, then fade to transparent
   const gradient = ctx.createLinearGradient(0, height, 0, 0);
   gradient.addColorStop(0, '#ff69b4');                     // Solid hot pink at bottom
-  gradient.addColorStop(0.3, '#ffb6d9');                   // Lighter pink
-  gradient.addColorStop(0.6, 'rgba(255, 182, 217, 0.6)');  // Semi-transparent
-  gradient.addColorStop(0.8, 'rgba(255, 192, 203, 0.3)');  // Very transparent
+  gradient.addColorStop(0.225, '#ff69b4');                 // Solid until username level (310/400 = 0.775, so 1-0.775 = 0.225)
+  gradient.addColorStop(0.5, 'rgba(255, 182, 217, 0.6)');  // Start fading
+  gradient.addColorStop(0.8, 'rgba(255, 192, 203, 0.3)');  // More transparent
   gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');      // Fully transparent at top
   
   ctx.fillStyle = gradient;
@@ -150,8 +150,8 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.fillText(text, x, y);
   };
   
-  // Load avatar images
-  let donorAvatar, recipientAvatar;
+  // Load avatar images and custom emoji
+  let donorAvatar, recipientAvatar, customEmoji;
   
   try {
     const donorAvatarUrl = await getRobloxHeadshotUrl(donorUserId);
@@ -169,6 +169,14 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     }
   } catch (error) {
     console.warn('Failed to load recipient avatar');
+  }
+  
+  // Load custom Discord emoji
+  try {
+    const emojiUrl = 'https://cdn.discordapp.com/emojis/1333681854098636861.png';
+    customEmoji = await loadImage(emojiUrl);
+  } catch (error) {
+    console.warn('Failed to load custom emoji');
   }
   
   // Avatar settings - larger avatars
@@ -223,32 +231,35 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
-  // Draw hexagon icon
-  const iconX = 600;
+  // Draw custom Discord emoji at the beginning
+  const iconX = 560;
   const iconY = 120;
-  const hexSize = 45;
+  const iconSize = 80;
   
-  ctx.save();
-  ctx.translate(iconX, iconY);
-  
-  // Black outline
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 8;
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i - Math.PI / 6;
-    const x = hexSize * Math.cos(angle);
-    const y = hexSize * Math.sin(angle);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+  if (customEmoji) {
+    ctx.drawImage(customEmoji, iconX, iconY - iconSize / 2, iconSize, iconSize);
+  } else {
+    // Fallback: draw hexagon if emoji fails to load
+    ctx.save();
+    ctx.translate(iconX + iconSize / 2, iconY);
+    
+    const hexSize = 40;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 6;
+      const x = hexSize * Math.cos(angle);
+      const y = hexSize * Math.sin(angle);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = '#ff1493';
+    ctx.fill();
+    ctx.restore();
   }
-  ctx.closePath();
-  ctx.stroke();
-  
-  // Hot pink fill
-  ctx.fillStyle = '#ff1493';
-  ctx.fill();
-  ctx.restore();
   
   // Draw amount with hot pink fill and black outline
   const formattedAmount = formatNumber(amount);
