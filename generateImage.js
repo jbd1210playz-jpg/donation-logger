@@ -52,19 +52,8 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // IMPORTANT: Start with transparent background
+  // Fully transparent background - no gradient, no fill
   ctx.clearRect(0, 0, width, height);
-  
-  // Create gradient fade from bottom (pink) to top (transparent)
-  const gradient = ctx.createLinearGradient(0, height, 0, 0);
-  gradient.addColorStop(0, '#ff69b4');                     // Solid hot pink at bottom
-  gradient.addColorStop(0.25, '#ff8dc4');                  // Lighter pink
-  gradient.addColorStop(0.5, 'rgba(255, 182, 217, 0.7)');  // Semi-transparent
-  gradient.addColorStop(0.75, 'rgba(255, 192, 203, 0.3)'); // Very transparent
-  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');      // Fully transparent at top
-  
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
   
   // Helper function for perfect text with white fill and black outline
   const drawPerfectText = (text, x, y, size, align = 'center', stroke = 6) => {
