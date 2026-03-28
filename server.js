@@ -229,39 +229,19 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
-  // Draw custom Discord emoji at the beginning
-  const iconX = 560;
+  // Draw custom Discord emoji next to the amount
+  const emojiSize = 80;
+  const amountX = 700;
+  const emojiX = amountX - 200; // Position emoji to the left of amount
   const iconY = 120;
-  const iconSize = 80;
   
   if (customEmoji) {
-    ctx.drawImage(customEmoji, iconX, iconY - iconSize / 2, iconSize, iconSize);
-  } else {
-    // Fallback: draw hexagon if emoji fails to load
-    ctx.save();
-    ctx.translate(iconX + iconSize / 2, iconY);
-    
-    const hexSize = 40;
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI / 3) * i - Math.PI / 6;
-      const x = hexSize * Math.cos(angle);
-      const y = hexSize * Math.sin(angle);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fillStyle = '#ff1493';
-    ctx.fill();
-    ctx.restore();
+    ctx.drawImage(customEmoji, emojiX, iconY - emojiSize / 2, emojiSize, emojiSize);
   }
   
   // Draw amount with hot pink fill and black outline - CENTERED
   const formattedAmount = formatNumber(amount);
-  drawText(formattedAmount, 700, 120, 100, '#ff1493', 'center', 10);
+  drawText(formattedAmount, amountX, 120, 100, '#ff1493', 'center', 10);
   
   // Draw "donated to" text (white with black outline)
   drawText('donated to', 700, 230, 60, '#FFFFFF', 'center', 8);
@@ -347,7 +327,7 @@ app.post('/api/donation', async (req, res) => {
     };
 
     const payload = {
-      content: `💰 **'${donorUsername}'** donated **${formatNumber(amount)} Robux** to **'${recipientUsername}'**!`,
+      content: `💰 \`@${donorUsername}\` donated **${formatNumber(amount)} Robux** to \`@${recipientUsername}\`!`,
       embeds: [embed]
     };
     
