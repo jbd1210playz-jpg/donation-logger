@@ -4,12 +4,20 @@ const { createCanvas, loadImage, registerFont } = require('canvas');
 const FormData = require('form-data');
 require('dotenv').config();
 
-// Register a proper font that supports all characters
+// Register a proper font that supports all characters  
 try {
   registerFont('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', { family: 'DejaVu Sans', weight: 'bold' });
   registerFont('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', { family: 'DejaVu Sans' });
+  console.log('✅ Fonts registered successfully');
 } catch (error) {
-  console.warn('Could not register fonts, using defaults');
+  // Try alternative paths
+  try {
+    registerFont('/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf', { family: 'DejaVu Sans', weight: 'bold' });
+    registerFont('/usr/share/fonts/dejavu/DejaVuSans.ttf', { family: 'DejaVu Sans' });
+    console.log('✅ Fonts registered from alternative path');
+  } catch (error2) {
+    console.warn('⚠️ Fonts not available, using system default');
+  }
 }
 
 const app = express();
@@ -103,17 +111,50 @@ function wrapText(ctx, text, maxWidth) {
 
 // Generate donation image
 async function generateDonationImage(donorName, donorUserId, recipientName, recipientUserId, amount, message) {
-  // Canvas dimensions - taller to accommodate message box and date
+  // Determine tier based on amount
+  const tier = amount >= 10000000 ? 'legendary' : amount >= 1000000 ? 'epic' : 'common';
+  
+  // Tier-specific colors
+  const colors = {
+    common: {
+      bg1: '#1a1a2e',
+      bg2: '#16213e',
+      border: '#ff00ff',
+      text: '#ff00ff',
+      robuxIcon: '#ff00ff',
+      username: '#fff'
+    },
+    epic: {
+      bg1: '#ff69b4',  // Hot pink
+      bg2: '#ff1493',  // Deep pink
+      border: '#ff00ff',
+      text: '#ff00ff',
+      robuxIcon: '#ff00ff',
+      username: '#000'
+    },
+    legendary: {
+      bg1: '#ff6347',  // Tomato red
+      bg2: '#ff4500',  // Orange red  
+      border: '#ff0000',
+      text: '#ff0000',
+      robuxIcon: '#ff0000',
+      username: '#000'
+    }
+  };
+  
+  const theme = colors[tier];
+  
+  // Canvas dimensions
   const width = 1400;
   const height = message ? 550 : 450;
   
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Background - gradient
+  // Background - gradient based on tier
   const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, '#1a1a2e');
-  gradient.addColorStop(1, '#16213e');
+  gradient.addColorStop(0, theme.bg1);
+  gradient.addColorStop(1, theme.bg2);
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
   
@@ -126,7 +167,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
       donorAvatar = await loadImage(donorAvatarUrl);
     }
   } catch (error) {
-    console.warn('Failed to load donor avatar, using placeholder');
+    console.warn('Failed to load donor avatar');
   }
   
   try {
@@ -135,7 +176,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
       recipientAvatar = await loadImage(recipientAvatarUrl);
     }
   } catch (error) {
-    console.warn('Failed to load recipient avatar, using placeholder');
+    console.warn('Failed to load recipient avatar');
   }
   
   // Draw donor avatar (left side)
@@ -148,21 +189,20 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.drawImage(donorAvatar, 110, 70, 220, 220);
     ctx.restore();
     
-    // Pink circle border
-    ctx.strokeStyle = '#ff00ff';
-    ctx.lineWidth = 8;
+    // Border color based on tier
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 10;
     ctx.beginPath();
     ctx.arc(220, 180, 110, 0, Math.PI * 2);
     ctx.stroke();
   } else {
-    // Placeholder circle
     ctx.fillStyle = '#555';
     ctx.beginPath();
     ctx.arc(220, 180, 110, 0, Math.PI * 2);
     ctx.fill();
     
-    ctx.strokeStyle = '#ff00ff';
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 10;
     ctx.stroke();
   }
   
@@ -176,93 +216,79 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.drawImage(recipientAvatar, 1070, 70, 220, 220);
     ctx.restore();
     
-    // Pink circle border
-    ctx.strokeStyle = '#ff00ff';
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 10;
     ctx.beginPath();
     ctx.arc(1180, 180, 110, 0, Math.PI * 2);
     ctx.stroke();
   } else {
-    // Placeholder circle
     ctx.fillStyle = '#555';
     ctx.beginPath();
     ctx.arc(1180, 180, 110, 0, Math.PI * 2);
     ctx.fill();
     
-    ctx.strokeStyle = '#ff00ff';
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 10;
     ctx.stroke();
   }
   
   // Draw Robux icon
-  ctx.fillStyle = '#ff00ff';
-  ctx.font = 'bold 80px "DejaVu Sans"';
+  ctx.fillStyle = theme.robuxIcon;
+  ctx.font = 'bold 80px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('◈', 700, 90);
   
   // Draw amount with stroke effect
   const formattedAmount = formatNumber(amount);
-  ctx.font = 'bold 100px "DejaVu Sans"';
+  ctx.font = 'bold 100px sans-serif';
   ctx.textAlign = 'center';
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 10;
   ctx.strokeText(formattedAmount, 700, 140);
-  ctx.fillStyle = '#ff00ff';
+  ctx.fillStyle = theme.text;
   ctx.fillText(formattedAmount, 700, 140);
   
   // Draw "donated to" text
-  ctx.font = 'bold 60px "DejaVu Sans"';
+  ctx.font = 'bold 60px sans-serif';
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 6;
   ctx.strokeText('donated to', 700, 210);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = '#000';
   ctx.fillText('donated to', 700, 210);
   
-  // Draw donor name with @ prefix
-  ctx.font = 'bold 36px "DejaVu Sans"';
+  // Draw donor name
+  ctx.font = 'bold 36px sans-serif';
   ctx.textAlign = 'center';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 5;
-  ctx.strokeText(`@${donorName}`, 220, 320);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = theme.username;
   ctx.fillText(`@${donorName}`, 220, 320);
   
-  // Draw recipient name with @ prefix
-  ctx.strokeText(`@${recipientName}`, 1180, 320);
-  ctx.fillStyle = '#fff';
+  // Draw recipient name
+  ctx.fillStyle = theme.username;
   ctx.fillText(`@${recipientName}`, 1180, 320);
   
-  // Draw message box if message provided
+  // Draw message box if provided
   if (message && message.trim()) {
     const boxY = 360;
     const boxHeight = 100;
-    const boxPadding = 30;
     
-    // Draw message box background (rounded rectangle)
-    ctx.fillStyle = 'rgba(40, 40, 50, 0.8)';
-    ctx.beginPath();
-    ctx.roundRect(100, boxY, width - 200, boxHeight, 15);
-    ctx.fill();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillRect(100, boxY, width - 200, boxHeight);
     
-    // Draw message text
-    ctx.font = '24px "DejaVu Sans"';
+    ctx.font = '24px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#000';
     
     const lines = wrapText(ctx, message, width - 260);
-    const lineHeight = 32;
-    const textStartY = boxY + boxPadding + 10;
-    
-    lines.slice(0, 2).forEach((line, i) => { // Max 2 lines
-      ctx.fillText(line, 130, textStartY + (i * lineHeight));
+    lines.slice(0, 2).forEach((line, i) => {
+      ctx.fillText(line, 130, boxY + 40 + (i * 32));
     });
   }
   
-  // Draw "Donated on •" text at the very bottom
+  // Draw timestamp
   const dateText = `Donated on • ${formatDate()}`;
-  ctx.font = '20px "DejaVu Sans"';
+  ctx.font = '20px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = tier === 'common' ? '#888' : '#000';
   ctx.fillText(dateText, width / 2, height - 20);
   
   return canvas.toBuffer('image/png');
