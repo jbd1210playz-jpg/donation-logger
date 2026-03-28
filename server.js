@@ -198,17 +198,19 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     console.warn('Failed to load recipient avatar');
   }
   
-  // Load custom Discord emoji (try PNG format)
+  // Load custom Discord emoji using axios for better compatibility
   try {
     const emojiUrl = 'https://cdn.discordapp.com/emojis/1487124460308922419.png?size=96';
-    customEmoji = await loadImage(emojiUrl);
+    const emojiResponse = await axios.get(emojiUrl, { responseType: 'arraybuffer' });
+    customEmoji = await loadImage(Buffer.from(emojiResponse.data));
     console.log('✅ Robux emoji loaded successfully');
   } catch (error) {
-    console.warn('Failed to load custom emoji:', error.message);
+    console.warn('Failed to load custom emoji (PNG):', error.message);
     // Try webp as fallback
     try {
       const emojiUrlWebp = 'https://cdn.discordapp.com/emojis/1487124460308922419.webp?size=96';
-      customEmoji = await loadImage(emojiUrlWebp);
+      const emojiResponse = await axios.get(emojiUrlWebp, { responseType: 'arraybuffer' });
+      customEmoji = await loadImage(Buffer.from(emojiResponse.data));
       console.log('✅ Robux emoji loaded (webp fallback)');
     } catch (error2) {
       console.error('Failed to load emoji in both formats:', error2.message);
