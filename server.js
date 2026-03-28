@@ -269,12 +269,20 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
-  // Draw custom Discord emoji next to the amount (to the left)
+  // Calculate amount text width to position emoji and amount together
+  const formattedAmount = formatNumber(amt);
+  ctx.font = `bold 100px Arial`;
+  const amountWidth = ctx.measureText(formattedAmount).width;
+  
   const emojiSize = 90;
-  const amountX = 700;
-  const emojiX = amountX - 180; // Position emoji closer to the left of amount
+  const totalWidth = emojiSize + 20 + amountWidth; // emoji + gap + amount
+  const startX = (width - totalWidth) / 2; // Center the whole group
+  
+  const emojiX = startX;
+  const amountX = startX + emojiSize + 20;
   const iconY = 120;
   
+  // Draw custom Discord emoji next to the amount
   if (customEmoji) {
     ctx.drawImage(customEmoji, emojiX, iconY - emojiSize / 2, emojiSize, emojiSize);
     console.log(`✅ Drew Robux emoji at position (${emojiX}, ${iconY - emojiSize / 2})`);
@@ -282,9 +290,8 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     console.warn('⚠️ Custom emoji not loaded, skipping emoji draw');
   }
   
-  // Draw amount with tier color and black outline - CENTERED
-  const formattedAmount = formatNumber(amt);
-  drawText(formattedAmount, amountX + 80, 120, 100, tierConfig.color, 'center', 10);
+  // Draw amount with tier color and black outline - positioned right after emoji
+  drawText(formattedAmount, amountX, 120, 100, tierConfig.color, 'left', 10);
   
   // Draw "donated to" text (white with black outline)
   drawText('donated to', 700, 230, 60, '#FFFFFF', 'center', 8);
