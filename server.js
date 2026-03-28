@@ -302,6 +302,10 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   // Draw recipient name below right avatar (white with black outline)
   drawText(`@${recipientName}`, rightAvatarX, 310, 36, '#FFFFFF', 'center', 6);
   
+  // Draw timestamp at the bottom
+  const timestamp = formatDate();
+  drawText(timestamp, width / 2, height - 30, 24, '#FFFFFF', 'center', 4);
+  
   return canvas.toBuffer('image/png');
 }
 
