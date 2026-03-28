@@ -111,6 +111,33 @@ function wrapText(ctx, text, maxWidth) {
 
 // Generate donation image
 async function generateDonationImage(donorName, donorUserId, recipientName, recipientUserId, amount, message) {
+  // Determine tier based on amount
+  const amt = Number(amount);
+  let tierConfig;
+  
+  if (amt >= 10000000) {
+    // 10M+ - Pink with fade
+    tierConfig = {
+      color: '#ff1493',
+      hasFade: true,
+      fadeColor: 'rgba(255, 20, 147, 0.8)'
+    };
+  } else if (amt >= 1000000) {
+    // 1M+ - Teal with fade
+    tierConfig = {
+      color: '#00CED1',
+      hasFade: true,
+      fadeColor: 'rgba(0, 206, 209, 0.8)'
+    };
+  } else {
+    // 100k+ - Orange, no fade
+    tierConfig = {
+      color: '#FFA500',
+      hasFade: false,
+      fadeColor: null
+    };
+  }
+  
   // Canvas dimensions - proper height
   const width = 1400;
   const height = 400;
@@ -118,19 +145,21 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Transparent background with fade only at the bottom
+  // Clear background
   ctx.clearRect(0, 0, width, height);
   
-  // Create gradient fade - only at bottom, rest is transparent
-  const gradient = ctx.createLinearGradient(0, height, 0, height * 0.4);
-  gradient.addColorStop(0, 'rgba(255, 107, 180, 0.8)');     // Semi-transparent pink at bottom
-  gradient.addColorStop(0.5, 'rgba(255, 141, 196, 0.4)');   // Fade
-  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');       // Transparent (stops at 40% height)
+  // Apply fade only if tier has fade
+  if (tierConfig.hasFade) {
+    const gradient = ctx.createLinearGradient(0, height, 0, height * 0.4);
+    gradient.addColorStop(0, tierConfig.fadeColor);           // Semi-transparent at bottom
+    gradient.addColorStop(0.5, tierConfig.fadeColor.replace('0.8', '0.4'));  // Fade
+    gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');       // Transparent
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  }
   
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-  
-  // Helper function for text with pink fill and black outline
+  // Helper function for text with tier color and black outline
   const drawText = (text, x, y, size, fillColor, align = 'center', strokeWidth = 8) => {
     ctx.font = `bold ${size}px Arial`;
     ctx.textAlign = align;
@@ -199,8 +228,8 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.fill();
   }
   
-  // Hot pink border for donor avatar
-  ctx.strokeStyle = '#ff1493';
+  // Tier-colored border for donor avatar
+  ctx.strokeStyle = tierConfig.color;
   ctx.lineWidth = 10;
   ctx.beginPath();
   ctx.arc(leftAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
@@ -222,26 +251,26 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.fill();
   }
   
-  // Hot pink border for recipient avatar
-  ctx.strokeStyle = '#ff1493';
+  // Tier-colored border for recipient avatar
+  ctx.strokeStyle = tierConfig.color;
   ctx.lineWidth = 10;
   ctx.beginPath();
   ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
   // Draw custom Discord emoji next to the amount
-  const emojiSize = 80;
+  const emojiSize = 90;
   const amountX = 700;
-  const emojiX = amountX - 200; // Position emoji to the left of amount
+  const emojiX = amountX - 230; // Position emoji to the left of amount
   const iconY = 120;
   
   if (customEmoji) {
     ctx.drawImage(customEmoji, emojiX, iconY - emojiSize / 2, emojiSize, emojiSize);
   }
   
-  // Draw amount with hot pink fill and black outline - CENTERED
-  const formattedAmount = formatNumber(amount);
-  drawText(formattedAmount, amountX, 120, 100, '#ff1493', 'center', 10);
+  // Draw amount with tier color and black outline - CENTERED
+  const formattedAmount = formatNumber(amt);
+  drawText(formattedAmount, amountX, 120, 100, tierConfig.color, 'center', 10);
   
   // Draw "donated to" text (white with black outline)
   drawText('donated to', 700, 230, 60, '#FFFFFF', 'center', 8);
