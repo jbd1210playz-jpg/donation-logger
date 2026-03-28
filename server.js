@@ -118,18 +118,17 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Transparent background with fade starting at bottom, fully transparent at usernames
+  // Transparent background with fade starting at bottom (no solid color)
   ctx.clearRect(0, 0, width, height);
   
-  // Create gradient fade - solid pink at bottom (400), fade up, fully transparent at username level (310)
+  // Create gradient fade - fade from bottom, fully transparent at username level
   const usernameY = 310;
   const gradient = ctx.createLinearGradient(0, height, 0, 0);
-  gradient.addColorStop(0, '#ff69b4');                     // Solid hot pink at bottom (y=400)
-  gradient.addColorStop(0.2, '#ff8dc4');                   // Start fading
-  gradient.addColorStop(0.4, 'rgba(255, 182, 217, 0.7)');  // More transparent
-  gradient.addColorStop(0.6, 'rgba(255, 192, 203, 0.3)');  // Very transparent
-  gradient.addColorStop((height - usernameY) / height, 'rgba(255, 192, 203, 0)'); // Fully transparent at username level (y=310)
-  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');      // Stay transparent to top
+  gradient.addColorStop(0, 'rgba(255, 107, 180, 0.8)');     // Semi-transparent pink at bottom (not solid)
+  gradient.addColorStop(0.3, 'rgba(255, 141, 196, 0.5)');   // Lighter fade
+  gradient.addColorStop(0.6, 'rgba(255, 182, 217, 0.2)');   // More transparent
+  gradient.addColorStop((height - usernameY) / height, 'rgba(255, 192, 203, 0)'); // Fully transparent at username level
+  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');       // Stay transparent to top
   
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
@@ -263,9 +262,9 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.restore();
   }
   
-  // Draw amount with hot pink fill and black outline
+  // Draw amount with hot pink fill and black outline - CENTERED
   const formattedAmount = formatNumber(amount);
-  drawText(formattedAmount, 850, 120, 100, '#ff1493', 'center', 10);
+  drawText(formattedAmount, 700, 120, 100, '#ff1493', 'center', 10);
   
   // Draw "donated to" text (white with black outline)
   drawText('donated to', 700, 230, 60, '#FFFFFF', 'center', 8);
@@ -345,7 +344,7 @@ app.post('/api/donation', async (req, res) => {
     // Add embed instead of simple content
     const embed = {
       color: 0xff00ff, // Pink color
-      description: `💰 **${donorUsername}** donated **${formatNumber(amount)} Robux** to **${recipientUsername}**!`,
+      description: `💰 **'${donorUsername}'** donated **${formatNumber(amount)} Robux** to **'${recipientUsername}'**!`,
       image: {
         url: 'attachment://donation.png'
       }
