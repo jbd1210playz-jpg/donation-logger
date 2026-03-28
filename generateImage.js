@@ -37,10 +37,17 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Background - gradient based on tier
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, theme.bg1);
-  gradient.addColorStop(1, theme.bg2);
+  // Background - transparent with gradient fade from bottom to top
+  // Clear to transparent first
+  ctx.clearRect(0, 0, width, height);
+  
+  // Create gradient from bottom (solid pink) to top (transparent)
+  const gradient = ctx.createLinearGradient(0, height, 0, 0);
+  gradient.addColorStop(0, '#ff69b4');      // Solid pink at bottom
+  gradient.addColorStop(0.3, '#ffb6d9');    // Lighter pink
+  gradient.addColorStop(0.5, 'rgba(255, 182, 217, 0.6)');  // Semi-transparent
+  gradient.addColorStop(0.7, 'rgba(255, 192, 203, 0.3)');  // More transparent
+  gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');      // Fully transparent at top
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
   
