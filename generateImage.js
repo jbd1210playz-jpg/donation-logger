@@ -39,24 +39,30 @@ async function fetchImage(url) {
   return await loadImage(Buffer.from(res.data));
 }
 
-// Generate donation image with transparent background and gradient fade
+// Generate donation image
 async function generateDonationImage(donorName, donorUserId, recipientName, recipientUserId, amount, message) {
   // Clean usernames
   const cleanDonor = donorName.replace('@', '');
   const cleanRecipient = recipientName.replace('@', '');
   
-  // Canvas dimensions
+  // Canvas dimensions - shorter height like the template
   const width = 1400;
-  const height = 400;
+  const height = 200;
   
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Fully transparent background - no gradient, no fill
-  ctx.clearRect(0, 0, width, height);
+  // Red/pink gradient background from left to right
+  const gradient = ctx.createLinearGradient(0, 0, width, 0);
+  gradient.addColorStop(0, '#ff6b6b');      // Red-pink on left
+  gradient.addColorStop(0.5, '#ffb3ba');    // Light pink in middle
+  gradient.addColorStop(1, '#ff6b6b');      // Red-pink on right
   
-  // Helper function for perfect text with white fill and black outline
-  const drawPerfectText = (text, x, y, size, align = 'center', stroke = 6) => {
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  
+  // Helper function for text with white fill and black outline
+  const drawText = (text, x, y, size, align = 'center') => {
     ctx.font = `bold ${size}px Arial, sans-serif`;
     ctx.textAlign = align;
     ctx.textBaseline = 'middle';
@@ -65,7 +71,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     
     // Black outline
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = stroke;
+    ctx.lineWidth = 4;
     ctx.strokeText(text, x, y);
     
     // White fill
@@ -94,11 +100,13 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     console.warn('Failed to load recipient avatar:', error);
   }
   
-  // Draw donor avatar (left side)
-  const avatarSize = 100;
-  const leftAvatarX = 200;
-  const avatarY = 130;
+  // Avatar settings
+  const avatarSize = 60;
+  const avatarY = 70;
+  const leftAvatarX = 80;
+  const rightAvatarX = 1320;
   
+  // Draw donor avatar (left side)
   if (donorAvatar) {
     ctx.save();
     ctx.beginPath();
@@ -114,16 +122,14 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.fill();
   }
   
-  // Pink border for donor avatar
-  ctx.strokeStyle = '#ff1493';
-  ctx.lineWidth = 10;
+  // Red border for donor avatar
+  ctx.strokeStyle = '#cc0000';
+  ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.arc(leftAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
   // Draw recipient avatar (right side)
-  const rightAvatarX = 1200;
-  
   if (recipientAvatar) {
     ctx.save();
     ctx.beginPath();
@@ -139,65 +145,54 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.fill();
   }
   
-  // Pink border for recipient avatar
-  ctx.strokeStyle = '#ff1493';
-  ctx.lineWidth = 10;
+  // Red border for recipient avatar
+  ctx.strokeStyle = '#cc0000';
+  ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
-  // Draw hexagon icon
-  ctx.save();
-  ctx.translate(700, 80);
+  // Draw Robux icon (circle with R)
+  const iconX = 200;
+  const iconY = 50;
+  const iconRadius = 25;
   
-  // Black outline
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 8;
+  // Red circle
+  ctx.fillStyle = '#cc0000';
   ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i;
-    const x = 40 * Math.cos(angle);
-    const y = 40 * Math.sin(angle);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.stroke();
-  
-  // Pink fill
-  ctx.fillStyle = '#ff1493';
+  ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2);
   ctx.fill();
-  ctx.restore();
   
-  // Draw amount with pink fill and black outline
-  const amountText = formatNumber(amount);
-  ctx.font = 'bold 100px Arial, sans-serif';
+  // White R
+  ctx.font = 'bold 30px Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.miterLimit = 2;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('R', iconX, iconY);
+  
+  // Draw amount next to icon
+  const amountText = formatNumber(amount);
+  ctx.font = 'bold 50px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
   
   // Black outline
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 10;
-  ctx.strokeText(amountText, 850, 130);
+  ctx.lineWidth = 5;
+  ctx.strokeText(amountText, 240, 50);
   
-  // Pink fill
-  ctx.fillStyle = '#ff1493';
-  ctx.fillText(amountText, 850, 130);
+  // White fill
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(amountText, 240, 50);
   
-  // Draw "donated to" text (white with black outline)
-  drawPerfectText('donated to', 700, 210, 50, 'center', 6);
+  // Draw "donated to" text
+  drawText('donated to', 700, 100, 40, 'center');
   
-  // Draw donor name
-  drawPerfectText(`@${cleanDonor}`, leftAvatarX, 270, 32, 'center', 5);
+  // Draw donor name below left avatar
+  drawText(`@${cleanDonor}`, leftAvatarX, 160, 20, 'center');
   
-  // Draw recipient name
-  drawPerfectText(`@${cleanRecipient}`, rightAvatarX, 270, 32, 'center', 5);
-  
-  // Draw timestamp at the bottom
-  const dateText = `Donated on ${formatDate()}`;
-  drawPerfectText(dateText, width / 2, height - 30, 22, 'center', 4);
+  // Draw recipient name below right avatar
+  drawText(`@${cleanRecipient}`, rightAvatarX, 160, 20, 'center');
   
   return canvas.toBuffer('image/png');
 }
