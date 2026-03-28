@@ -1,8 +1,36 @@
-const { createCanvas, loadImage } = require('canvas');
+const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
+const axios = require('axios');
+
+const ICONS = {
+  PURE_PURPLE: "https://cdn.discordapp.com/attachments/1470491771363393778/1472467289151508703/output-onlinepngtools_1.png?ex=69989c46&is=69974ac6&hm=fd761cd52fbda719981d6065d8d6ef198e8d971303c9229c733e6b011e581267",
+  SLIGHT_PURPLE: "https://media.discordapp.net/attachments/1470491771363393778/1472500932079128656/output-onlinepngtools_6.png?ex=6998bb9b&is=69976a1b&hm=4e51d99521095414378bcd48eb8d97dcdadcb69124dd7472e8d4e2cf99d626b2&=&format=webp&quality=lossless",
+  RED: "https://cdn.discordapp.com/attachments/1470491771363393778/1472467370445639820/output-onlinepngtools_3.png?ex=69989c5a&is=69974ada&hm=5e1f71e8f8b95d1da36b4ace8f3e8f9e394c9b355a167f87b2e218c6763c19a6"
+};
+
+const FONT_URL = "https://st.1001fonts.net/download/font/montserrat.medium.ttf";
+
+let fontLoaded = false;
+
+async function setupFonts() {
+  if (fontLoaded) return;
+  try {
+    const response = await axios.get(FONT_URL, { responseType: 'arraybuffer' });
+    GlobalFonts.register(Buffer.from(response.data), 'CustomFont');
+    console.log("✅ Final Font Loaded");
+    fontLoaded = true;
+  } catch (e) {
+    console.error("Font failed:", e);
+  }
+}
+
+async function fetchImage(url) {
+  const res = await axios.get(url, { responseType: 'arraybuffer' });
+  return await loadImage(Buffer.from(res.data));
+}
 
 // Format number with commas
 function formatNumber(num) {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return num.toLocaleString();
 }
 
 // Format date
@@ -19,36 +47,11 @@ function formatDate() {
   return `${month} ${day}, ${year} at ${hour12}:${minutes} ${ampm}`;
 }
 
-// Wrap text to fit width
-function wrapText(ctx, text, maxWidth) {
-  const words = text.split(' ');
-  const lines = [];
-  let currentLine = '';
-  
-  for (const word of words) {
-    const testLine = currentLine + (currentLine ? ' ' : '') + word;
-    const metrics = ctx.measureText(testLine);
-    
-    if (metrics.width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
-    }
-  }
-  
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-  
-  return lines;
-}
-
 // Get Roblox headshot URL
 async function getRobloxHeadshotUrl(userId) {
   try {
-    const response = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`);
-    const data = await response.json();
+    const response = await axios.get(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`);
+    const data = response.data;
     if (data.data && data.data[0] && data.data[0].imageUrl) {
       return data.data[0].imageUrl;
     }
@@ -60,6 +63,25 @@ async function getRobloxHeadshotUrl(userId) {
 
 // Generate donation image with transparent background and gradient fade
 async function generateDonationImage(donorName, donorUserId, recipientName, recipientUserId, amount, message) {
+  // Ensure fonts are loaded
+  await setupFonts();
+  
+  // Clean usernames
+  const cleanDonor = donorName.replace('@', '');
+  const cleanRecipient = recipientName.replace('@', '');
+  
+  // Determine tier and config
+  const amt = Number(amount);
+  let config = {};
+  
+  if (amt >= 100000 && amt < 1000000) {
+    config = { ringColor: '#DD00FF', textColor: '#DD00FF', icon: ICONS.PURE_PURPLE };
+  } else if (amt >= 1000000 && amt < 10000000) {
+    config = { ringColor: '#FF00FF', textColor: '#FF00FF', icon: ICONS.SLIGHT_PURPLE };
+  } else {
+    config = { ringColor: '#FF1414', textColor: '#FF1414', icon: ICONS.RED };
+  }
+  
   // Canvas dimensions
   const width = 1400;
   const height = 450;
@@ -81,13 +103,27 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
   
+  // Helper function for perfect text
+  const drawPerfectText = (text, x, y, color, size, align = 'center', stroke = 4) => {
+    ctx.font = `${size}px ${fontLoaded ? 'CustomFont' : 'Arial, sans-serif'}`;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = stroke;
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+  };
+  
   // Load avatar images
-  let donorAvatar, recipientAvatar;
+  let donorAvatar, recipientAvatar, iconImage;
   
   try {
     const donorAvatarUrl = await getRobloxHeadshotUrl(donorUserId);
     if (donorAvatarUrl) {
-      donorAvatar = await loadImage(donorAvatarUrl);
+      donorAvatar = await fetchImage(donorAvatarUrl);
     }
   } catch (error) {
     console.warn('Failed to load donor avatar:', error);
@@ -96,10 +132,16 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   try {
     const recipientAvatarUrl = await getRobloxHeadshotUrl(recipientUserId);
     if (recipientAvatarUrl) {
-      recipientAvatar = await loadImage(recipientAvatarUrl);
+      recipientAvatar = await fetchImage(recipientAvatarUrl);
     }
   } catch (error) {
     console.warn('Failed to load recipient avatar:', error);
+  }
+  
+  try {
+    iconImage = await fetchImage(config.icon);
+  } catch (error) {
+    console.warn('Failed to load icon:', error);
   }
   
   // Draw donor avatar (left side)
@@ -122,8 +164,8 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.fill();
   }
   
-  // Pink border for donor avatar
-  ctx.strokeStyle = '#ff1493';
+  // Tier-based colored border for donor avatar
+  ctx.strokeStyle = config.ringColor;
   ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.arc(leftAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
@@ -147,78 +189,35 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     ctx.fill();
   }
   
-  // Pink border for recipient avatar
-  ctx.strokeStyle = '#ff1493';
+  // Tier-based colored border for recipient avatar
+  ctx.strokeStyle = config.ringColor;
   ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.arc(rightAvatarX, avatarY, avatarSize, 0, Math.PI * 2);
   ctx.stroke();
   
-  // Draw Robux icon (hexagon)
-  ctx.save();
-  ctx.translate(700, 60);
-  ctx.fillStyle = '#ff1493';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 3;
-  
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i;
-    const x = 30 * Math.cos(angle);
-    const y = 30 * Math.sin(angle);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+  // Draw icon above amount
+  if (iconImage) {
+    const iconSize = 70;
+    ctx.drawImage(iconImage, 700 - iconSize / 2, 40, iconSize, iconSize);
   }
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
   
-  // Draw amount with white text and black stroke
-  const formattedAmount = formatNumber(amount);
-  ctx.font = 'bold 90px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  
-  // Black stroke
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 8;
-  ctx.strokeText(formattedAmount, 700, 150);
-  
-  // White fill
-  ctx.fillStyle = '#fff';
-  ctx.fillText(formattedAmount, 700, 150);
+  // Draw amount with tier-based color
+  const amountText = formatNumber(amt);
+  drawPerfectText(amountText, 700, 140, config.textColor, 90, 'center', 8);
   
   // Draw "donated to" text
-  ctx.font = 'bold 50px Arial, sans-serif';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 6;
-  ctx.strokeText('donated to', 700, 220);
-  ctx.fillStyle = '#fff';
-  ctx.fillText('donated to', 700, 220);
+  drawPerfectText('donated to', 700, 220, '#FFFFFF', 50, 'center', 6);
   
   // Draw donor name
-  ctx.font = 'bold 40px Arial, sans-serif';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 5;
-  ctx.strokeText(`@${donorName}`, leftAvatarX, 320);
-  ctx.fillStyle = '#fff';
-  ctx.fillText(`@${donorName}`, leftAvatarX, 320);
+  drawPerfectText(`@${cleanDonor}`, leftAvatarX, 320, '#FFFFFF', 40, 'center', 5);
   
   // Draw recipient name
-  ctx.strokeText(`@${recipientName}`, rightAvatarX, 320);
-  ctx.fillStyle = '#fff';
-  ctx.fillText(`@${recipientName}`, rightAvatarX, 320);
+  drawPerfectText(`@${cleanRecipient}`, rightAvatarX, 320, '#FFFFFF', 40, 'center', 5);
   
   // Draw timestamp at the bottom with high visibility
   const dateText = `Donated on ${formatDate()}`;
-  ctx.font = 'bold 24px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 4;
-  ctx.strokeText(dateText, width / 2, height - 30);
-  ctx.fillStyle = '#fff';
-  ctx.fillText(dateText, width / 2, height - 30);
+  drawPerfectText(dateText, width / 2, height - 30, '#FFFFFF', 24, 'center', 4);
   
   return canvas.toBuffer('image/png');
 }
