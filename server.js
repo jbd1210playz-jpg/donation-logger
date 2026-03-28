@@ -114,31 +114,25 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   // Determine tier based on amount
   const tier = amount >= 10000000 ? 'legendary' : amount >= 1000000 ? 'epic' : 'common';
   
-  // Tier-specific colors
+  // Tier-specific colors for gradient overlay and borders
   const colors = {
     common: {
-      bg1: '#1a1a2e',
-      bg2: '#16213e',
+      gradientColor: null, // No gradient overlay
       border: '#ff00ff',
       text: '#ff00ff',
-      robuxIcon: '#ff00ff',
       username: '#fff'
     },
     epic: {
-      bg1: '#ff69b4',  // Hot pink
-      bg2: '#ff1493',  // Deep pink
+      gradientColor: '#ff00ff', // Pink gradient overlay
       border: '#ff00ff',
       text: '#ff00ff',
-      robuxIcon: '#ff00ff',
-      username: '#000'
+      username: '#fff'
     },
     legendary: {
-      bg1: '#ff6347',  // Tomato red
-      bg2: '#ff4500',  // Orange red  
+      gradientColor: '#ff4500', // Red/orange gradient overlay
       border: '#ff0000',
       text: '#ff0000',
-      robuxIcon: '#ff0000',
-      username: '#000'
+      username: '#fff'
     }
   };
   
@@ -151,12 +145,21 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   
-  // Background - gradient based on tier
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, theme.bg1);
-  gradient.addColorStop(1, theme.bg2);
-  ctx.fillStyle = gradient;
+  // Background - dark gradient (always)
+  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+  bgGradient.addColorStop(0, '#1a1a2e');
+  bgGradient.addColorStop(1, '#16213e');
+  ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
+  
+  // Add colored gradient overlay for epic/legendary tiers
+  if (theme.gradientColor) {
+    const overlayGradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 2);
+    overlayGradient.addColorStop(0, `${theme.gradientColor}40`); // 25% opacity at center
+    overlayGradient.addColorStop(1, `${theme.gradientColor}00`); // 0% opacity at edges
+    ctx.fillStyle = overlayGradient;
+    ctx.fillRect(0, 0, width, height);
+  }
   
   // Load avatar images
   let donorAvatar, recipientAvatar;
@@ -233,7 +236,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   }
   
   // Draw Robux icon
-  ctx.fillStyle = theme.robuxIcon;
+  ctx.fillStyle = theme.text;
   ctx.font = 'bold 80px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('◈', 700, 90);
@@ -253,7 +256,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 6;
   ctx.strokeText('donated to', 700, 210);
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = '#fff';
   ctx.fillText('donated to', 700, 210);
   
   // Draw donor name
@@ -271,12 +274,12 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
     const boxY = 360;
     const boxHeight = 100;
     
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.fillRect(100, boxY, width - 200, boxHeight);
     
     ctx.font = '24px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = '#fff';
     
     const lines = wrapText(ctx, message, width - 260);
     lines.slice(0, 2).forEach((line, i) => {
@@ -288,7 +291,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   const dateText = `Donated on • ${formatDate()}`;
   ctx.font = '20px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillStyle = tier === 'common' ? '#888' : '#000';
+  ctx.fillStyle = '#888';
   ctx.fillText(dateText, width / 2, height - 20);
   
   return canvas.toBuffer('image/png');
