@@ -171,7 +171,7 @@ async function generateDonationImage(donorName, donorUserId, recipientName, reci
   
   // Load custom Discord emoji
   try {
-    const emojiUrl = 'https://cdn.discordapp.com/emojis/1333681854098636861.png';
+    const emojiUrl = 'https://cdn.discordapp.com/emojis/1487124460308922419.webp?size=96';
     customEmoji = await loadImage(emojiUrl);
   } catch (error) {
     console.warn('Failed to load custom emoji');
@@ -327,7 +327,7 @@ app.post('/api/donation', async (req, res) => {
     };
 
     const payload = {
-      content: `💰 \`@${donorUsername}\` donated **${formatNumber(amount)} Robux** to \`@${recipientUsername}\`!`,
+      content: `<:robux:1487124460308922419> \`@${donorUsername}\` donated **${formatNumber(amount)} Robux** to \`@${recipientUsername}\`!`,
       embeds: [embed]
     };
     
